@@ -474,24 +474,6 @@ def hasattr(object, attribute):
         return False
     return True
 
-def hash(object):
-    """hash(object) -> integer
-
-    Return a hash value for the object.  Two objects with the same value have
-    the same hash value.  The reverse is not necessarily true, but likely.
-
-    Changes over built-in function:
-    - Hash value is not truncated
-    """
-
-    for obj in type(object).__mro__:
-        if "__hash__" in obj.__dict__:
-            if obj.__dict__["__hash__"] is None:
-                break
-            return obj.__dict__["__hash__"](object)
-
-    raise TypeError("unhashable type: %r" % obj.__name__)
-
 def hex(number):
     """hex(number) -> string
 
