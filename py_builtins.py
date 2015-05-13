@@ -114,6 +114,12 @@ def _change_base(number, base, fill=1):
 
     return "".join(total)
 
+def _filler(string, fill, filler="0"):
+    """Fill the string with 'filler' so that len(string) % fill == 0."""
+    if not len(string) % fill:
+        return string
+    return filler * (fill - len(string) % fill) + string
+
 # Actual functions and classes in alphabetical order from this point on
 
 def abs(num):
@@ -186,16 +192,12 @@ def ascii(object):
 
     string = list(repr(object))
     for i, char in enumerate(string):
-        if 127 < ord(char) < 256:
-            x = hex(ord(char)).replace("0x", "\\x")
-        elif 255 < ord(char):
-            x = hex(ord(char)).replace("0x", "\\u")
-        else:
-            continue
-
-        if len(x) % 2:
-            x = x[:2] + "0" + x[2:]
-        string[i] = x
+        if 0x7F < ord(char) <= 0xFF:
+            string[i] = "\\x" + _filler(hex(ord(char)), 2)
+        elif 0xFF < ord(char) <= 0xFFFF:
+            string[i] = "\\u" + _filler(hex(ord(char)), 4)
+        elif 0xFFFF < ord(char):
+            string[i] = "\\U" + _filler(hex(ord(char)), 8)
 
     return "".join(string)
 
@@ -239,10 +241,12 @@ def chr(num):
         raise TypeError("an integer is required (got type %s)" % type(num).__name__)
     if num not in range(0x110000):
         raise ValueError("chr() arg not in range(0x110000)")
-    if num < 256:
+    if num <= 0xFF:
         return _characters[num]
+    if num <= 0xFFFF:
+        return _codecs.unicode_escape_decode("\\u" + _change_base(num, 16, 4))[0]
 
-    return _codecs.unicode_escape_decode("\\u" + _change_base(num, 16, 4))[0]
+    return _codecs.unicode_escape_decode("\\U" + _change_base(num, 16, 8))[0]
 
 class classmethod:
     """classmethod(function) -> method
