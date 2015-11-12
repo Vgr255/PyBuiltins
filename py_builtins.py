@@ -2024,17 +2024,17 @@ class range:
 
         raise ValueError("%s is not in range" % value)
 
-def repr(object):
-    """repr(object) -> string
+    @getset_descriptor
+    def start(self):
+        return 0
 
-    Return the canonical string representation of the object.
-    For most object types, eval(repr(object)) == object.
+    @getset_descriptor
+    def stop(self):
+        return -1
 
-    Changes over built-in function:
-    None
-    """
-
-    return type(object).__repr__(object)
+    @getset_descriptor
+    def step(self):
+        return 1
 
 class reversed:
     """reversed(sequence) -> reverse iterator over values of the sequence
@@ -2061,6 +2061,8 @@ class reversed:
 
     def __next__(self):
         """Implement next(self)."""
+        if self.index < 0:
+            raise StopIteration
         self.index -= 1
         return self.iterable[self.index+1]
 
@@ -2072,36 +2074,13 @@ class reversed:
         """Return state information for pickling."""
         return type(self), (self.iterable,), self.index
 
-@_argument
-def round(number, *ndigits):
-    """round(number[, ndigits]) -> number
+    @getset_descriptor
+    def iterable(self):
+        return []
 
-    Round a number to a given precision in decimal digits (default 0 digits).
-    This returns an int when called with one argument, otherwise the
-    same type as the number. ndigits may be negative.
-
-    Changes over built-in function:
-    + Support for the 'ndigits' keyword argument as well as positional
-    """
-
-    if hasattr(type(number), "__round__"):
-        if ndigits:
-            return type(number).__round__(number, ndigits[0])
-        return type(number).__round__(number)
-
-    raise TypeError("type %s doesn't define a __round__ method" % type(number).__name__)
-
-def setattr(object, attribute, value):
-    """setattr(object, name, value)
-
-    Set a named attribute on an object; setattr(x, 'y', v) is equivalent to
-    ``x.y = v''.
-
-    Changes over built-in function:
-    None
-    """
-
-    type(object).__setattr__(object, attribute, value)
+    @getset_descriptor
+    def index(self):
+        return 0
 
 class slice:
     """slice(stop)
@@ -2189,73 +2168,17 @@ class slice:
 
         return start, stop, step
 
-def sorted(iterable, *, key=None, reverse=False):
-    """sorted(iterable, key=None, reverse=False) --> new sorted list
+    @getset_descriptor
+    def start(self):
+        return 0
 
-    Changes over built-in function:
-    None
-    """
+    @getset_descriptor
+    def stop(self):
+        return -1
 
-    new = list(iterable)
-    new.sort(key=key, reverse=reverse)
-    return new
-
-class staticmethod:
-    """staticmethod(function) -> method
-
-    Convert a function to be a static method.
-
-    A static method does not receive an implicit first argument.
-    To declare a static method, use this idiom:
-
-         class C:
-         def f(arg1, arg2, ...): ...
-         f = staticmethod(f)
-
-    It can be called either on the class (e.g. C.f()) or on an instance
-    (e.g. C().f()). The instance is ignored except for its class.
-
-    Static methods in Python are similar to those found in Java or C++.
-    For a more advanced concept, see the classmethod class.
-
-    Changes over built-in type:
-    None
-    """
-
-    def __init__(self, function):
-        """Initialize self. See help(type(self)) for accurate signature."""
-        self.__isabstractmethod__ = getattr(function, "__isabstractmethod__", False)
-        self.__func__ = function
-
-    def __get__(self, instance, owner):
-        """Return an attribute of instance, which is of type owner."""
-        return self.__func__
-
-def sum(*iterable, start=0):
-    """sum(iterable[, start]) -> value
-
-    Return the sum of an iterable of numbers (NOT strings) plus the value
-    of parameter 'start' (which defaults to 0).  When the iterable is
-    empty, return start.
-
-    Changes over built-in function:
-    + Support for an arbitrary number of parameters
-
-    sum(a, b, c) == sum((a, b, c))
-    """
-
-    if isinstance(start, str):
-        raise TypeError("sum() can't sum strings [use ''.join(seq) instead]")
-
-    if not iterable:
-        raise TypeError("sum expected at least 1 arguments, got 0")
-
-    if len(iterable) == 1:
-        iterable = iterable[0]
-
-    for item in iterable:
-        start += item
-    return start
+    @getset_descriptor
+    def step(self):
+        return 1
 
 class super:
     """super() -> same as super(__class__, <first argument>)
@@ -2305,7 +2228,7 @@ class super:
             self.__thisclass__ = args[0]
 
         else:
-            raise TypeError("must be type, not %s" % (args[0]).__name__)
+            raise TypeError("must be type, not %s" % args[0].__name__)
 
     def __getattribute__(self, name):
         """Return getattr(self, name)."""
@@ -2354,21 +2277,17 @@ class super:
         if __self__ is __self_class__:
             return "<super: <class %r>, <%s object>>" % (__thisclass__.__name__, __self__.__name__)
 
-@_argument
-def vars(*object):
-    """vars([object]) -> dictionary
+    @member_descriptor
+    def __self__(self):
+        return self
 
-    Without arguments, equivalent to locals().
-    With an argument, equivalent to object.__dict__.
+    @member_descriptor
+    def __self_class__(self):
+        return self.__class__
 
-    Changes over built-in function:
-    + Support for the 'object' keyword argument as well as positional
-    """
-
-    if object:
-        return object[0].__dict__
-
-    return _sys._getframe(2).f_locals
+    @member_descriptor
+    def __thisclass__(self):
+        return self.__class__
 
 class zip:
     """zip(iter1 [,iter2 [...]]) --> zip object
@@ -2407,3 +2326,15 @@ class zip:
     def __reduce__(self):
         """Return state information for pickling."""
         return type(self), self.iterators
+
+    @getset_descriptor
+    def iterators(self):
+        return []
+
+    @getset_descriptor
+    def length(self):
+        return 0
+
+    @getset_descriptor
+    def index(self):
+        return 0
