@@ -315,12 +315,29 @@ def chr(num): # WRAPPER
     if num not in range(0x110000):
         raise ValueError("chr() arg not in range(0x110000)")
 
-
-# def compile(source, filename, mode, flags=0, dont_inherit=False, optimize=-1):
-# the most ironic of all functions; compiled bytecode to create compiled bytecode - genius!
-# this one is still to-do... will get around to it sooner or later
     import builtins
     return builtins.chr(num)
+
+#def compile(source, filename, mode, flags=0, dont_inherit=False, optimize=-1):
+#    """compile(source, filename, mode[, flags[, dont_inherit]]) -> code object
+#
+#    Compile the source (a Python module, statement or expression)
+#    into a code object that can be executed by exec() or eval().
+#    The filename will be used for run-time error messages.
+#    The mode must be 'exec' to compile a module, 'single' to compile a
+#    single (interactive) statement, or 'eval' to compile an expression.
+#    The flags argument, if present, controls which future statements influence
+#    the compilation of the code.
+#    The dont_inherit argument, if non-zero, stops the compilation inheriting
+#    the effects of any future statements in effect in the code calling
+#    compile; if absent or zero these statements do influence the compilation,
+#    in addition to any features explicitly specified.
+#
+#    Changes over built-in function:
+#    None
+#    """
+
+# Still TODO - or rather, will it ever get done? Maybe it's a tad too hard for the hassle
 
 def delattr(object, attribute):
     """delattr(object, name)
@@ -374,6 +391,31 @@ def divmod(number, mod):
 
     raise TypeError("unsupported operand type(s) for divmod(): %r and %r" % (type(number).__name__, type(mod).__name__))
 
+#@_eval_exec_handler
+#def eval(source, globals, locals): # WRAPPER
+#    """eval(source[, globals[, locals]]) -> value
+#
+#    Evaluate the source in the context of globals and locals.
+#    The source may be a string representing a Python expression
+#    or a code object as returned by compile().
+#    The globals must be a dictionary and locals can be any mapping,
+#    defaulting to the current globals and locals.
+#    If only globals is given, locals defaults to it.
+#
+#    Changes over built-in function:
+#    None
+#    """
+#
+#    if isinstance(source, (str, bytes, _ast.AST)):
+#        source = compile(source, "<string>", "eval")
+#
+#    if not code.is_code(source):
+#        raise TypeError("eval() arg 1 must be a string, bytes or code object")
+#
+#    source = code.from_code(source).to_code()
+#
+#    import builtins
+#    return builtins.eval(source, globals, locals)
 
 def format(value, format_spec=""):
     """format(value[, format_spec]) -> string
