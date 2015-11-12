@@ -12,20 +12,61 @@ __author__ = "'Vgr' E. Barry"
 # these modules are already imported when Python starts - therefore we waste no time importing them
 
 import sys as _sys
-import _codecs
+import os as _os
+
+# import the pure Python version of 'open'
+
+from _pyio import OpenWrapper as open
+
+# for eval/exec/compile
+
+import _ast
+
+# help, exit, quit, credits, copyright and license are all defined in the pure Python _sitebuiltins module
+# they will only be defined if Python was not started with the -S flag
+
+def _define_sitebuiltins():
+    import _sitebuiltins
+
+    global help, exit, quit, credits, copyright, license
+
+    help = _sitebuiltins._Helper()
+
+    if _os.sep == ":":
+        prompt = "Cmd-Q"
+    elif _os.sep == "\\":
+        prompt = "Ctrl-Z plus Return"
+    else:
+        prompt = "Ctrl-D (i.e. EOF)"
+
+    exit = _sitebuiltins.Quitter("exit", prompt)
+    quit = _sitebuiltins.Quitter("quit", prompt)
+
+    if _sys.platform[:4] == "java":
+        credits = _sitebuiltins._Printer("credits",
+        "Jython is maintained by the Jython developers (www.jython.org).")
+    else:
+        credits = _sitebuiltins._Printer("credits",
+        "    Thanks to CWI, CNRI, BeOpen.com, Zope Corporation and a cast of thousands\n"
+        "    for supporting Python development.  See www.python.org for more information.")
+
+    copyright = _sitebuiltins._Printer("copyright", _sys.copyright)
+
+    try:
+        _os.__file__
+    except AttributeError:
+        files, dirs = [], []
+    else:
+        files = ["LICENSE.txt", "LICENSE"]
+        dirs = [_os.path.join(_os.path.dirname(_os.__file__), _os.pardir), _os.path.dirname(_os.__file__), _os.curdir]
+
+    license = _sitebuiltins._Printer("license", "See http://www.python.org/download/releases/%.5s/license" % _sys.version, files, dirs)
+
+if not _sys.flags.no_site: _define_sitebuiltins()
 
 _builtin_slice = slice # need to keep it around for proper slice checking
 
-_characters = ("\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f" +
-               "\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f" +
-               " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`" +
-               "abcdefghijklmnopqrstuvwxyz{|}~\x7f" +
-               "\x80\x81\x82\x83\x84\x85\x86\x87\x88\x89\x8a\x8b\x8c\x8d\x8e\x8f" +
-               "\x90\x91\x92\x93\x94\x95\x96\x97\x98\x99\x9a\x9b\x9c\x9d\x9e\x9f\xa0" +
-               "¡¢£¤¥¦§¨©ª«¬\xad®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞ" +
-               "ßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ")
-
-# private behind-the-scenes functions
+# decorator functions
 
 def _argument(func):
     """Single-argument decorator."""
