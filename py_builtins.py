@@ -794,16 +794,89 @@ def repr(object):
 
     return type(object).__repr__(object)
 
+@_argument
+def round(number, *ndigits):
+    """round(number[, ndigits]) -> number
 
+    Round a number to a given precision in decimal digits (default 0 digits).
+    This returns an int when called with one argument, otherwise the
+    same type as the number. ndigits may be negative.
 
+    Changes over built-in function:
+    + Support for the 'ndigits' keyword argument as well as positional
+    """
 
+    if hasattr(type(number), "__round__"):
+        if ndigits:
+            return type(number).__round__(number, ndigits[0])
+        return type(number).__round__(number)
 
+    raise TypeError("type %s doesn't define a __round__ method" % type(number).__name__)
 
+def setattr(object, attribute, value):
+    """setattr(object, name, value)
 
+    Set a named attribute on an object; setattr(x, 'y', v) is equivalent to
+    ``x.y = v''.
 
+    Changes over built-in function:
     None
     """
 
+    type(object).__setattr__(object, attribute, value)
+
+def sorted(iterable, *, key=None, reverse=False):
+    """sorted(iterable, key=None, reverse=False) --> new sorted list
+
+    Changes over built-in function:
+    None
+    """
+
+    new = list(iterable)
+    new.sort(key=key, reverse=reverse)
+    return new
+
+def sum(*iterable, start=0):
+    """sum(iterable[, start]) -> value
+
+    Return the sum of an iterable of numbers (NOT strings) plus the value
+    of parameter 'start' (which defaults to 0).  When the iterable is
+    empty, return start.
+
+    Changes over built-in function:
+    + Support for an arbitrary number of parameters
+
+    sum(a, b, c) == sum((a, b, c))
+    """
+
+    if isinstance(start, str):
+        raise TypeError("sum() can't sum strings [use ''.join(seq) instead]")
+
+    if not iterable:
+        raise TypeError("sum expected at least 1 arguments, got 0")
+
+    if len(iterable) == 1:
+        iterable = iterable[0]
+
+    for item in iterable:
+        start += item
+    return start
+
+@_argument
+def vars(*object):
+    """vars([object]) -> dictionary
+
+    Without arguments, equivalent to locals().
+    With an argument, equivalent to object.__dict__.
+
+    Changes over built-in function:
+    + Support for the 'object' keyword argument as well as positional
+    """
+
+    if object:
+        return object[0].__dict__
+
+    return _sys._getframe(2).f_locals
 
 # special decorator classes
 
