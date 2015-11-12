@@ -193,7 +193,7 @@ def _filler(string, fill, filler="0"):
         return string
     return filler * (fill - len(string) % fill) + string
 
-# Actual functions and classes in alphabetical order from this point on
+# Functions in alphabetical order
 
 def abs(num):
     """abs(number) -> number
@@ -321,48 +321,6 @@ def chr(num):
 
     return _codecs.unicode_escape_decode("\\U" + _change_base(num, 16, 8))[0]
 
-class classmethod:
-    """classmethod(function) -> method
-
-    Convert a function to be a class method.
-
-    A class method receives the class as implicit first argument,
-    just like an instance method receives the instance.
-    To declare a class method, use this idiom:
-
-      class C:
-          def f(cls, arg1, arg2, ...): ...
-          f = classmethod(f)
-
-    It can be called either on the class (e.g. C.f()) or on an instance
-    (e.g. C().f()).  The instance is ignored except for its class.
-    If a class method is called for a derived class, the derived class
-    object is passed as the implied first argument.
-
-    Class methods are different than C++ or Java static methods.
-    If you want those, see the staticmethod class.
-
-    Changes over built-in type:
-    None
-    """
-
-    def __init__(self, function):
-        """Initialize self. See help(type(self)) for accurate signature."""
-        self.__isabstractmethod__ = getattr(function, "__isabstractmethod__", False)
-        self.__func__ = function
-
-    def __get__(self, instance, owner):
-        """Return an attribute of instance, which is of type owner."""
-        def inner(*args, **kwargs):
-            return self.__func__(owner, *args, **kwargs)
-
-        inner.__name__ = self.__func__.__name__
-        inner.__doc__ = self.__func__.__doc__
-
-        if _sys.version_info >= (3, 3):
-            inner.__qualname__ = self.__func__.__qualname__
-
-        return inner
 
 # def compile(source, filename, mode, flags=0, dont_inherit=False, optimize=-1):
 # the most ironic of all functions; compiled bytecode to create compiled bytecode - genius!
@@ -420,67 +378,6 @@ def divmod(number, mod):
 
     raise TypeError("unsupported operand type(s) for divmod(): %r and %r" % (type(number).__name__, type(mod).__name__))
 
-class enumerate:
-    """enumerate(iterable[, start]) -> iterator for index, value of iterable
-
-    Return an enumerate object.  iterable must be another object that supports
-    iteration.  The enumerate object yields pairs containing a count (from
-    start, which defaults to zero) and a value yielded by the iterable argument.
-    enumerate is useful for obtaining an indexed list:
-        (0, seq[0]), (1, seq[1]), (2, seq[2]), ...
-
-    Changes over built-in type:
-    None
-    """
-
-    def __init__(self, iterable, start=0):
-        """Initialize self. See help(type(self)) for accurate signature."""
-        self.iterator = iter(iterable)
-        self.index = start
-
-    def __iter__(self):
-        """Implement iter(self)."""
-        return self
-
-    def __next__(self):
-        """Implement next(self)."""
-        self.index += 1
-        return self.index - 1, next(self.iterator)
-
-    def __reduce__(self):
-        """Return state information for pickling."""
-        return type(self), (self.iterator, self.index)
-
-class filter:
-    """filter(function or None, iterable) --> filter object
-
-    Return an iterator yielding those items of iterable for which function(item)
-    is true. If function is None, return the items that are true.
-
-    Changes over built-in type:
-    None
-    """
-
-    def __init__(self, callable, iterable):
-        """Initialize self. See help(type(self)) for accurate signature."""
-        self.callable = callable
-        self.iterator = iter(iterable)
-
-    def __iter__(self):
-        """Implement iter(self)."""
-        return self
-
-    def __next__(self):
-        """Implement next(self)."""
-        caller = bool if self.callable is None else self.callable
-        value = next(self.iterator)
-        if caller(value):
-            return value
-        return next(self)
-
-    def __reduce__(self):
-        """Return state information for pickling."""
-        return type(self), (self.callable, self.iterator)
 
 def format(value, format_spec=""):
     """format(value[, format_spec]) -> string
@@ -679,42 +576,6 @@ def locals():
 
     return _sys._getframe(1).f_locals
 
-class map:
-    """map(func, *iterables) --> map object
-
-    Make an iterator that computes the function using arguments from
-    each of the iterables.  Stops when the shortest iterable is exhausted.
-
-    Changes from the built-in type:
-    None
-    """
-
-    def __init__(self, func, *iterables):
-        """Initialize self. See help(type(self)) for accurate signature."""
-        self.function = func
-        self.iterators = tuple(iter(iterable) for iterable in iterables)
-
-    def __iter__(self):
-        """Implement iter(self)."""
-        return self
-
-    def __next__(self):
-        """Implement next(self)."""
-        args = []
-        for iterator in self.iterators:
-            try:
-                args.append(next(iterator))
-            except StopIteration:
-                break
-        else:
-            return self.function(*args)
-
-        raise StopIteration
-
-    def __reduce__(self):
-        """Return state information for pickling."""
-        return type(self), (self.function,) + self.iterators
-
 @_max_min_caller
 def max(iterable, key):
     """max(iterable[, key=func]) -> value
@@ -860,6 +721,196 @@ def print(*output, sep=" ", end="\n", file=_sys.stdout, flush=False):
     if flush:
         file.flush()
 
+
+
+    None
+    """
+
+
+
+
+
+
+
+
+
+    None
+    """
+
+
+# special decorator classes
+
+class _descriptor:
+
+    def __init__(self, func):
+        self.__doc__ = func.__doc__
+        if hasattr(func, "tb_frame"):
+            func = func.tb_frame
+        if hasattr(func, "f_code"):
+            func = func.f_code
+        if hasattr(func, "gi_code"):
+            func = func.gi_code
+        if hasattr(func, "__func__"):
+            func = func.__func__
+        if hasattr(func, "__code__"):
+            func = func.__code__
+        if hasattr(func, "co_name"):
+            self.__name__ = func.co_name
+        elif hasattr(func, "__name__"):
+            self.__name__ = func.__name__
+        else:
+            raise TypeError("could not find a name for func")
+
+    def __get__(self, instance, owner):
+        self.__objclass__ = owner
+        return self
+
+class member_descriptor(_descriptor):
+
+    # A member descriptor is a read-only access to an instance variable
+    # They are defined at the class level, and become read-only after one assignment
+    # In theory, at least. It does not work
+
+    def __repr__(self):
+        return "<member %r of %r objects>" % (self.__name__, self.__objclass__.__name__)
+
+class wrapper_descriptor(_descriptor):
+
+    def __set__(self, instance, value):
+        raise AttributeError("cannot override a slot wrapper")
+
+    def __delete__(self, instance):
+        raise AttributeError("cannot delete a slot wrapper")
+
+    def __repr__(self):
+        return "<slot wrapper %r of %r object>" % (self.__name__, self.__objclass__.__name__)
+
+    def __call__(self, *args, **kwargs):
+        return getattr(self.__objclass__, self.__name__)(*args, **kwargs)
+
+class getset_descriptor(_descriptor):
+
+    # A getset descriptor is used for attributes that can be modified after their initial assignment
+
+    def __repr__(self):
+        return "<attribute %r of %r objects>" % (self.__name__, self.__objclass__.__name__)
+
+class method_descriptor(_descriptor):
+
+    def __repr__(self):
+        return "<method %r of %r objects>" % (self.__name__, self.__objclass__.__name__)
+
+    def __call__(self, *args, **kwargs):
+        return getattr(self.__objclass__, self.__name__)(*args, **kwargs)
+
+class method_wrapper(_descriptor):
+
+    def __get__(self, instance, owner):
+        self.__objclass__ = owner
+        self.__self__ = instance
+        return self
+
+    def __repr__(self):
+        mem_index = object.__repr__(self)[object.__repr__(self).index("0x"):-1]
+        return "<method-wrapper %r of %s object at %s>" % (self.__name__, self.__objclass__.__name__, mem_index)
+
+    def __call__(self, *args, **kwargs):
+        if self.__self__ is None:
+            return getattr(self.__objclass__, self.__name__)(*args, **kwargs)
+        return getattr(self.__objclass__, self.__name__)(self.__self__, *args, **kwargs)
+
+# decorator classes present in the 'builtins' module
+
+class classmethod:
+    """classmethod(function) -> method
+
+    Convert a function to be a class method.
+
+    A class method receives the class as implicit first argument,
+    just like an instance method receives the instance.
+    To declare a class method, use this idiom:
+
+      class C:
+          def f(cls, arg1, arg2, ...): ...
+          f = classmethod(f)
+
+    It can be called either on the class (e.g. C.f()) or on an instance
+    (e.g. C().f()).  The instance is ignored except for its class.
+    If a class method is called for a derived class, the derived class
+    object is passed as the implied first argument.
+
+    Class methods are different than C++ or Java static methods.
+    If you want those, see the staticmethod class.
+
+    Changes over built-in type:
+    None
+    """
+
+    def __init__(self, function):
+        """Initialize self. See help(type(self)) for accurate signature."""
+        self.__isabstractmethod__ = bool(getattr(function, "__isabstractmethod__", False))
+        self.__func__ = function
+
+    def __get__(self, instance, owner):
+        """Return an attribute of instance, which is of type owner."""
+        def inner(*args, **kwargs):
+            return self.__func__(owner, *args, **kwargs)
+
+        inner.__name__ = self.__func__.__name__
+        inner.__doc__ = self.__func__.__doc__
+
+        if _sys.version_info >= (3, 3):
+            inner.__qualname__ = self.__func__.__qualname__
+
+        return inner
+
+    @getset_descriptor
+    def __isabstractmethd__(self):
+        return False
+
+    @member_descriptor
+    def __func__(self):
+        return self
+
+class staticmethod:
+    """staticmethod(function) -> method
+
+    Convert a function to be a static method.
+
+    A static method does not receive an implicit first argument.
+    To declare a static method, use this idiom:
+
+         class C:
+         def f(arg1, arg2, ...): ...
+         f = staticmethod(f)
+
+    It can be called either on the class (e.g. C.f()) or on an instance
+    (e.g. C().f()). The instance is ignored except for its class.
+
+    Static methods in Python are similar to those found in Java or C++.
+    For a more advanced concept, see the classmethod class.
+
+    Changes over built-in type:
+    None
+    """
+
+    def __init__(self, func):
+        """Initialize self. See help(type(self)) for accurate signature."""
+        self.__isabstractmethod__ = bool(getattr(func, "__isabstractmethod__", False))
+        self.__func__ = func
+
+    def __get__(self, instance, owner):
+        """Return an attribute of instance, which is of type owner."""
+        return self.__func__
+
+    @getset_descriptor
+    def __isabstractmethod__(self):
+        return False
+
+    @member_descriptor
+    def __func__(self):
+        return self
+
 class property:
     """property(fget=None, fset=None, fdel=None, doc=None) -> property attribute
 
@@ -893,7 +944,7 @@ class property:
 
     def __init__(self, fget=None, fset=None, fdel=None, doc=None):
         """Initialize self. See help(type(self)) for accurate signature."""
-        self.__isabstractmethod__ = getattr(fget, "__isabstractmethod__", False)
+        self.__isabstractmethod__ = bool(getattr(fget, "__isabstractmethod__", False))
         self.fget = fget
         self.fset = fset
         self.fdel = fdel
@@ -923,7 +974,7 @@ class property:
 
     def getter(self, fget):
         """Descriptor to change the getter on a property."""
-        return type(self)(fget, self.fset, self.fdel, self.__doc__)
+        return type(self)(fget, self.fset, self.fdel, self.__doc__ or fget.__doc__)
 
     def setter(self, fset):
         """Descriptor to change the setter on a property."""
@@ -932,6 +983,790 @@ class property:
     def deleter(self, fdel):
         """Descriptor to change the deleter on a property."""
         return type(self)(self.fget, self.fset, fdel, self.__doc__)
+
+    @member_descriptor
+    def fget(self):
+        return self
+
+    @member_descriptor
+    def fset(self):
+        return self
+
+    @member_descriptor
+    def fdel(self):
+        return self
+
+# special classes
+
+class code:
+    """code(argcount, kwonlyargcount, nlocals, stacksize, flags, codestring,
+            constants, names, varnames, filename, name, firstlineno,
+            lnotab[, freevars[, cellvars]])
+
+    Create a code object.  Not for the faint of heart.
+
+    Changes over built-in type:
+    + to_code method, to convert the instance into a built-in code object
+    + from_code class method, to create an instance from a built-in code object
+    + is_code static method, to detect if an object is a code object
+    """
+
+    def __init__(self, argcount, kwonlyargcount, nlocals, stacksize, flags,
+                 codestring, constants, names, varnames, filename, name,
+                 firstlineno, lnotab, freevars=(), cellvars=()):
+
+        self.co_argcount = argcount
+        self.co_kwonlyargcount = kwonlyargcount
+        self.co_nlocals = nlocals
+        self.co_stacksize = stacksize
+        self.co_flags = flags
+        self.co_code = codestring
+        self.co_consts = constants
+        self.co_names = names
+        self.co_varnames = varnames
+        self.co_filename = filename
+        self.co_name = name
+        self.co_firstlineno = firstlineno
+        self.co_lnotab = lnotab
+        self.co_freevars = freevars
+        self.co_cellvars = cellvars
+
+    def to_code(co):
+        """Convert into a built-in code object for some workings."""
+        return _argument.__code__.__class__(co.co_argcount,
+                         co.co_kwonlyargcount, co.co_nlocals,
+                         co.co_stacksize, co.co_flags, co.co_code,
+                         co.co_consts, co.co_names, co.co_varnames,
+                         co.co_filename, co.co_name, co.co_firstlineno,
+                         co.co_lnotab, co.co_freevars, co.co_cellvars)
+
+    @classmethod
+    def from_code(cls, co):
+        """Convert a built-in code object into this object."""
+        return cls(co.co_argcount, co.co_kwonlyargcount, co.co_nlocals,
+                   co.co_stacksize, co.co_flags, co.co_code, co.co_consts,
+                   co.co_names, co.co_varnames, co.co_filename, co.co_name,
+                   co.co_firstlineno, co.co_lnotab, co.co_freevars, co.co_cellvars)
+
+    @staticmethod
+    def is_code(other):
+        try:
+            other.co_argcount, other.co_kwonlyargcount
+            other.co_nlocals, other.co_stacksize
+            other.co_flags, other.co_code, other.co_consts
+            other.co_names, other.co_varnames
+            other.co_filename, other.co_name
+            other.co_firstlineno, other.co_lnotab
+            other.co_freevars, other.co_cellvars
+        except AttributeError:
+            return False
+
+        return True
+
+    @member_descriptor
+    def co_argcount(self):
+        """The number of positional arguments."""
+
+    @member_descriptor
+    def co_kwonlyargcount(self):
+        """The number of keyword-only arguments."""
+
+    @member_descriptor
+    def co_nlocals(self):
+        """Equivalent to len(co_varnames)."""
+
+    @member_descriptor
+    def co_stacksize(self):
+        """How many stacks are needed to execute the bytecode."""
+
+    @member_descriptor
+    def co_flags(self):
+        """The code flags. As follow:
+
+        1  = CO_OPTIMIZED   - Code is optimized
+        2  = CO_NEWLOCALS   - Create a new local scope
+        4  = CO_VARARGS     - Use of *args
+        8  = CO_VARKEYWORDS - Use of **kwargs
+        16 = CO_NESTED      - Function is nested
+        32 = CO_GENERATOR   - Function is a generator
+        64 = CO_NOFREE      - No space left to modify bytecode (?)
+        """
+
+    @member_descriptor
+    def co_code(self):
+        """Compiled bytecode."""
+
+    @member_descriptor
+    def co_consts(self):
+        """Constants used in the code."""
+
+    @member_descriptor
+    def co_names(self):
+        """Functions and other names used in the code."""
+
+    @member_descriptor
+    def co_varnames(self):
+        """All the variable names used, including the arguments."""
+
+    @member_descriptor
+    def co_filename(self):
+        """Filename the function was defined in."""
+
+    @member_descriptor
+    def co_name(self):
+        """Name of the function."""
+
+    @member_descriptor
+    def co_firstlineno(self):
+        """The line at which the function begins."""
+
+    @member_descriptor
+    def co_lnotab(self):
+        """Mapping of lines to indents."""
+
+    @member_descriptor
+    def co_freevars(self):
+        """Variables used in the function but defined outside of it."""
+
+    @member_descriptor
+    def co_cellvars(self):
+        """Variables used in nested scopes."""
+
+class frame:
+
+    def __init__(self, caller, builtins, code, globals,
+                 lasti, lineno, locals, trace=None):
+
+        self.f_back = caller
+        self.f_builtins = builtins
+        self.f_code = code
+        self.f_globals = globals
+        self.f_lasti = lasti
+        self.f_lineno = lineno
+        self.f_locals = locals
+        self.f_trace = trace
+
+    def clear(self): # I really don't know what it's meant to do. this is a guess
+        self.f_trace = None
+
+    def to_frame(f):
+        raise TypeError("cannot create 'frame' instance")
+
+    @classmethod
+    def from_frame(cls, f):
+        return cls(f.f_back, f.f_builtins, f.f_code, f.f_globals,
+                   f.f_lasti, f.f_lineno, f.f_locals, f.f_trace)
+
+    @staticmethod
+    def is_frame(f):
+        try:
+            f.f_back, f.f_builtins, f.f_code, f.f_globals
+            f.f_lasti, f.f_lineno, f.f_locals, f.f_trace
+        except AttributeError:
+            return False
+
+        return True
+
+    @member_descriptor
+    def f_back(self):
+        """This frame's caller."""
+
+    @member_descriptor
+    def f_builtins(self):
+        """Built-in scope seen by this frame."""
+
+    @member_descriptor
+    def f_code(self):
+        """Code object ran by this frame."""
+
+    @member_descriptor
+    def f_globals(self):
+        """Global scope seen by this frame."""
+
+    @member_descriptor
+    def f_lasti(self):
+        """Last index attempted in bytecode."""
+
+    @member_descriptor
+    def f_lineno(self):
+        """Line number where frame begins (?)."""
+
+    @member_descriptor
+    def f_locals(self):
+        """Local scope seen by this frame."""
+
+    @member_descriptor
+    def f_trace(self):
+        """Tracing function for this frame, or None."""
+
+class traceback:
+
+    def __init__(self, frame, lasti, lineno, next=None):
+        self.tb_frame = frame
+        self.tb_lasti = lasti
+        self.tb_lineno = lineno
+        self.tb_next = next
+
+    def to_traceback(tb):
+        raise TypeError("cannot create 'traceback' instance")
+
+    @classmethod
+    def from_traceback(cls, tb):
+        return cls(tb.tb_frame, tb.tb_lasti, tb.tb_lineno, tb.tb_next)
+
+    @staticmethod
+    def is_traceback(tb):
+        try:
+            tb.tb_frame, tb.tb_lasti, tb.tb_lineno, tb.tb_next
+        except AttributeError:
+            return False
+
+        return True
+
+    @member_descriptor
+    def tb_frame(self):
+        """Frame object associated with this traceback."""
+
+    @member_descriptor
+    def tb_lasti(self):
+        """Last index attempted in bytecode."""
+
+    @member_descriptor
+    def tb_lineno(self):
+        """Line number where error occurred."""
+
+    @member_descriptor
+    def tb_next(self):
+        """Inner traceback level (called by this level)."""
+
+class cell:
+
+    def __init__(self, contents):
+        self.cell_contents = contents
+
+    def __repr__(self):
+        mem_index = object.__repr__(self)[object.__repr__(self).index("0x"):-1]
+        mem_cell = object.__repr__(self.cell_contents)[object.__repr__(self.cell_contents).index("0x"):-1]
+        return "<cell at %s: %s object at %s>" % (mem_index, self.cell_contents.__class__.__name__, mem_cell)
+
+    def to_cell(cell):
+        raise TypeError("cannot create 'cell' instance")
+
+    @classmethod
+    def from_cell(cls, cell):
+        return cls(cell.cell_contents)
+
+    @staticmethod
+    def is_cell(cell):
+        return hasattr(cell, "cell_contents")
+
+    @getset_descriptor
+    def cell_contents(self):
+        """Contents of the cell."""
+
+class function:
+    """function(code, globals[, name[, argdefs[, closure]]])
+
+    Create a function object from a code object and a dictionary.
+    The optional name string overrides the name from the code object.
+    The optional argdefs tuple specifies the default argument values.
+    The optional closure tuple supplies the bindings for free variables.
+    """
+
+    def __init__(self, code, globals, name=None, argdefs=None, closure=None):
+        if name is None:
+            name = code.co_name
+        self.__name__ = name
+        self.__code__ = code
+        self.__annotations__ = {}
+        self.__closure__ = closure
+        self.__defaults__ = argdefs
+        self.__kwdefaults__ = None
+        self.__globals__ = globals
+        self.__doc__ = code.co_consts[0] if isinstance(code.co_consts[0], str) else None
+
+    def __get__(self, instance, owner):
+        if instance is not None:
+            return method(self, instance)
+        return self
+
+    def __call__(self, *args, **kwargs):
+        locals = dict(_sys._getframe(1).f_locals)
+        globals = _sys._getframe(1).f_globals
+        defargs = self.__defaults__ or ()
+        kwdefargs = self.__kwdefaults__ or {}
+        _args = {}
+        user_args = {}
+        co = self.__code__
+        CO_VARARGS = 4
+        CO_VARKEYWORDS = 8
+
+        num = total = co.co_argcount + co.co_kwonlyargcount
+
+        if co.co_flags & CO_VARARGS:
+            total += 1
+        if co.co_flags & CO_VARKEYWORDS:
+            total += 1
+
+        args_all = kwargs_all = None
+
+        if co.co_flags & CO_VARKEYWORDS:
+            kwargs_all = co.co_varnames[num+bool(co.co_flags & CO_VARARGS)]
+
+        if co.co_flags & CO_VARARGS:
+            args_all = co.co_varnames[num]
+
+        elif co.co_kwonlyargcount:
+            args_all = ""
+
+        arguments = co.co_varnames[:total]
+        index = co.co_argcount - len(defargs) - len(args)
+
+        if co.co_argcount < len(args):
+            raise TypeError("%s() takes %i positional arguments but %i were given" % (co.co_name, co.co_argcount, len(args)))
+
+        if co.co_argcount - len(defargs) > len(args):
+            raise TypeError("%s() missing %i required positional argument%s: %s" % (co.co_name, index, "s" if index > 1 else "", repr(arguments[index-1]) if
+                                                                                    index == 1 else ", ".join(repr(x) for x in arguments[index-1:co.co_argcount-1]) +
+                                                                                    (" and %r" % arguments[co.co_argcount-1])))
+
+        for arg in kwargs:
+            if arg not in arguments:
+                raise TypeError("%s() got an unexpected keyword argument: %r" % (co.co_name, arg))
+
+        if len(defargs) >= co.co_argcount:
+            for i, arg in enumerate(arguments):
+                if i >= co.co_argcount:
+                    break
+                _args[arg] = defargs[i]
+
+        elif defargs:
+            defargs_index = co.co_argcount - len(defargs)
+            for arg in defargs:
+                _args[arguments[defargs_index]] = arg
+
+        _args.update(kwdefargs)
+
+        for i, arg in enumerate(args):
+            user_args[arguments[i]] = arg
+
+        for arg, value in kwargs.items():
+            if arg in args:
+                raise TypeError("%s() got multiple values for argument %r" % arg)
+            user_args[arg] = value
+
+        _args.update(user_args)
+
+        locals.update(_args)
+
+        try:
+            return eval(co, globals, locals)
+        except TypeError: # not a code object or something
+            return eval(co.to_code(), globals, locals)
+
+    def to_function(func):
+        fn = _argument.__class__(func.__code__, func.__globals__,
+                                 func.__name__, func.__defaults__,
+                                 func.__closure__)
+
+        fn.__kwdefaults__ = func.__kwdefaults__
+        fn.__annotations__ = func.__annotations__
+
+        return fn
+
+    @classmethod
+    def from_function(cls, func):
+        fn = cls(func.__code__, func.__globals__, func.__name__,
+                 func.__defaults__, func.__closure__)
+
+        fn.__kwdefaults__ = func.__kwdefaults__
+        fn.__annotations__ = func.__annotations__
+
+        return fn
+
+    @staticmethod
+    def is_function(func):
+        try:
+            func.__code__, func.__name__, func.__closure__
+            func.__annotations__, func.__globals__
+            func.__defaults__, func.__kwdefaults__
+        except AttributeError:
+            return False
+
+        return True
+
+    @getset_descriptor
+    def __code__(self):
+        """Code object for this function."""
+
+    @getset_descriptor
+    def __annotations__(self):
+        """Annotations for the parameters."""
+
+    @member_descriptor
+    def __closure__(self):
+        """Names accessed in this scope defined in the outer scope."""
+
+    @getset_descriptor
+    def __defaults__(self):
+        """Default values for the positional arguments."""
+
+    @getset_descriptor
+    def __kwdefaults__(self):
+        """Default values for the keyword arguments."""
+
+    @member_descriptor
+    def __globals__(self):
+        """Global scope seen by this function."""
+
+class method:
+    """method(function, instance)
+
+    Create a bound instance method object.
+    """
+
+    def __init__(self, function, instance):
+        self.__func__ = function
+        self.__self__ = instance
+
+    def __call__(self, *args, **kwargs):
+        return self.__func__(self.__self__, *args, **kwargs)
+
+    def to_method(met):
+        return met.to_method.__class__(met.__func__, met.__self__)
+
+    @classmethod
+    def from_method(cls, met):
+        return cls(met.__func__, met.__self__)
+
+    @staticmethod
+    def is_method(met):
+        try:
+            met.__func__, met.__self__
+        except AttributeError:
+            return False
+
+        return True
+
+    @member_descriptor
+    def __func__(self):
+        """The function associated with the method."""
+
+    @member_descriptor
+    def __self__(self):
+        """The instance associated with the method."""
+
+class generator:
+    """generator(code)
+
+    Create a generator object.
+
+    Changes over built-in class:
+    + Support for the context manager
+    """
+
+    def __init__(self, code):
+        self.gi_code = code
+        self.gi_running = 0
+        self.gi_frame = frame(
+            _sys._getframe(1), globals(), code,
+            _sys._getframe(1).f_globals, 1,
+            code.co_firstlineno,
+            _sys._getframe(1).f_locals)
+
+    def to_generator(gi):
+        raise TypeError("cannot create 'generator' instance")
+
+    @classmethod
+    def from_generator(cls, gi):
+        return cls(gi.gi_code)
+
+    @staticmethod
+    def is_generator(gi):
+        try:
+            gi.gi_code, gi.gi_running, gi.gi_frame
+        except AttributeError:
+            return False
+
+        return True
+
+    def __del__(self):
+        self.close()
+
+    def __enter__(self):
+        self.send(None)
+        return self
+
+    def __exit__(self, exc, value, tb):
+        try:
+            self.close()
+        except Exception:
+            pass
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        pass # TODO: continue execution, and yield value
+
+    def close(self):
+        """close() -> raise GeneratorExit inside generator."""
+
+    def throw(self, exc, value=None, tb=None):
+        """throw(exc [, value [, tb]]) -> raise exception in generator,
+        return next yielded value or raise StopIteration."""
+        # still TODO
+
+    def send(self, value):
+        """send(value) -> send 'value' into generator,
+        return next yielded value or raise StopIteration."""
+
+    @member_descriptor
+    def gi_code(self):
+        """Code object for this generator."""
+
+    @member_descriptor
+    def gi_running(self):
+        """Set to 1 if generator is running, 0 otherwise."""
+
+    @member_descriptor
+    def gi_frame(self):
+        """Frame object or possibly None once the generator has been exhausted."""
+
+class module:
+    """module(name [,doc])
+
+    Create a module object.
+    The name must be a string; the optional doc argument can have any type.
+    """
+
+    def __init__(self, name, doc=None):
+        if not isinstance(name, str):
+            raise TypeError("module.__init__() argument 1 must be str, not %s" % name.__class__.__name__)
+
+        self.__name__ = name
+        self.__doc__ = doc
+        self.__loader__ = None
+        self.__package__ = None
+        self.__spec__ = None
+
+    def to_module(mod):
+        m = _sys.__class__(mod.__name__, mod.__doc__)
+
+        m.__loader__ = mod.__loader
+        m.__package__ = mod.__package__
+        m.__spec__ = mod.__spec__
+
+        return m
+
+    @classmethod
+    def from_module(cls, mod):
+        m = cls(mod.__name__, mod.__doc__)
+
+        m.__loader__ = mod.__loader
+        m.__package__ = mod.__package__
+        m.__spec__ = mod.__spec__
+
+        return m
+
+    @staticmethod
+    def is_module(mod):
+        try:
+            mod.__name__, mod.__loader__
+            mod.__package__, mod.__spec__
+        except AttributeError:
+            return False
+
+        return True
+
+    def __dir__(self):
+        return self.__dict__
+
+    def __repr__(self):
+        return "<module %r>" % (self.__name__,)
+
+class namespace:
+    """A simple attribute-based namespace.
+
+    namespace(**kwargs)
+
+    Changes over built-in class:
+    + Support for subscription
+    """
+
+    def __init__(self, **kwargs):
+        for arg in kwargs.items():
+            setattr(self, *arg)
+
+    def __iter__(self):
+        yield from self.__dict__
+
+    def __repr__(self):
+        return "%s(%s)" % (self.__class__.__name__, ", ".join("=".join((x, repr(self[x]))) for x in self))
+
+    def __getitem__(self, item):
+        if item in self:
+            return getattr(self, item)
+        raise KeyError(item)
+
+    __setitem__ = setattr
+    __delitem__ = delattr
+
+class mappingproxy:
+
+    def __init__(self, mapping):
+        self.mapping = mapping
+
+    def __getitem__(self, key):
+        return self.mapping[key]
+
+    def __iter__(self):
+        yield from self.mapping
+
+    def copy(self):
+        return self.__class__(self.mapping.copy())
+
+    def get(self, key, default=None):
+        return self.mapping.get(key, default)
+
+    def keys(self):
+        return self.mapping.keys()
+
+    def values(self):
+        return self.mapping.values()
+
+    def items(self):
+        return self.mapping.items()
+
+    @member_descriptor
+    def mapping(self):
+        return {}
+
+# non-decorator classes found in the 'builtins' module
+
+class enumerate:
+    """enumerate(iterable[, start]) -> iterator for index, value of iterable
+
+    Return an enumerate object.  iterable must be another object that supports
+    iteration.  The enumerate object yields pairs containing a count (from
+    start, which defaults to zero) and a value yielded by the iterable argument.
+    enumerate is useful for obtaining an indexed list:
+        (0, seq[0]), (1, seq[1]), (2, seq[2]), ...
+
+    Changes over built-in type:
+    None
+    """
+
+    def __init__(self, iterable, start=0):
+        """Initialize self. See help(type(self)) for accurate signature."""
+        self.iterator = iter(iterable)
+        self.index = start
+
+    def __iter__(self):
+        """Implement iter(self)."""
+        return self
+
+    def __next__(self):
+        """Implement next(self)."""
+        if self.index >= self.length:
+            raise StopIteration
+        self.index += 1
+        return self.index - 1, next(self.iterator)
+
+    def __reduce__(self):
+        """Return state information for pickling."""
+        return type(self), (self.iterator, self.index)
+
+    @getset_descriptor
+    def iterator(self):
+        return iter([])
+
+    @getset_descriptor
+    def index(self):
+        return 0
+
+class filter:
+    """filter(function or None, iterable) --> filter object
+
+    Return an iterator yielding those items of iterable for which function(item)
+    is true. If function is None, return the items that are true.
+
+    Changes over built-in type:
+    None
+    """
+
+    def __init__(self, callable, iterable):
+        """Initialize self. See help(type(self)) for accurate signature."""
+        self.callable = callable
+        self.iterator = iter(iterable)
+
+    def __iter__(self):
+        """Implement iter(self)."""
+        return self
+
+    def __next__(self):
+        """Implement next(self)."""
+        caller = bool if self.callable is None else self.callable
+        value = next(self.iterator)
+        if caller(value):
+            return value
+        return next(self)
+
+    def __reduce__(self):
+        """Return state information for pickling."""
+        return type(self), (self.callable, self.iterator)
+
+    @getset_descriptor
+    def callable(self):
+        return bool
+
+    @getset_descriptor
+    def iterator(self):
+        return iter([])
+
+class map:
+    """map(func, *iterables) --> map object
+
+    Make an iterator that computes the function using arguments from
+    each of the iterables.  Stops when the shortest iterable is exhausted.
+
+    Changes from the built-in type:
+    None
+    """
+
+    def __init__(self, func, *iterables):
+        """Initialize self. See help(type(self)) for accurate signature."""
+        self.function = func
+        self.iterators = tuple(iter(iterable) for iterable in iterables)
+
+    def __iter__(self):
+        """Implement iter(self)."""
+        return self
+
+    def __next__(self):
+        """Implement next(self)."""
+        args = []
+        for iterator in self.iterators:
+            try:
+                args.append(next(iterator))
+            except StopIteration:
+                break
+        else:
+            return self.function(*args)
+
+        raise StopIteration
+
+    def __reduce__(self):
+        """Return state information for pickling."""
+        return type(self), (self.function,) + self.iterators
+
+    @getset_descriptor
+    def function(self):
+        return self
+
+    @getset_descriptor
+    def iterators(self):
+        return []
 
 class range:
     """range(stop) -> range object
