@@ -1,11 +1,15 @@
-﻿"""Pure Python implementations of built-in functions.
-This can be used to get a good idea of how built-in types and functions work."""
+﻿"""Pure Python implementations of built-in functions and classes.
+This can be used to get a good idea of how built-in types and functions work.
+This is not meant to be used normally in development."""
 
 __author__ = "'Vgr' E. Barry"
 
-# all of the built-in functions and types which could be implemented
-# in pure Python has been done, with the exception of compile.
-# compile will take some time to do, so for now this will do
+# tags for functions:
+
+# UNSAFE: Do *not* use this function in production
+# WRAPPER: Pure Python implementation is too tricky; this is a wrapper around the built-in
+
+# these modules are already imported when Python starts - therefore we waste no time importing them
 
 import sys as _sys
 import _codecs
