@@ -301,7 +301,7 @@ def callable(object):
 
     return hasattr(object, "__call__")
 
-def chr(num):
+def chr(num): # WRAPPER
     """chr(i) -> Unicode character
 
     Return a Unicode string of one character with ordinal i; 0 <= i <= 0x10ffff.
@@ -314,17 +314,13 @@ def chr(num):
         raise TypeError("an integer is required (got type %s)" % type(num).__name__)
     if num not in range(0x110000):
         raise ValueError("chr() arg not in range(0x110000)")
-    if num <= 0xFF:
-        return _characters[num]
-    if num <= 0xFFFF:
-        return _codecs.unicode_escape_decode("\\u" + _change_base(num, 16, 4))[0]
-
-    return _codecs.unicode_escape_decode("\\U" + _change_base(num, 16, 8))[0]
 
 
 # def compile(source, filename, mode, flags=0, dont_inherit=False, optimize=-1):
 # the most ironic of all functions; compiled bytecode to create compiled bytecode - genius!
 # this one is still to-do... will get around to it sooner or later
+    import builtins
+    return builtins.chr(num)
 
 def delattr(object, attribute):
     """delattr(object, name)
