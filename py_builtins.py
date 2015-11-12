@@ -152,6 +152,8 @@ def _max_min_caller(func):
 
     return inner
 
+# private behind-the-scenes functions
+
 def _iter(callable, sentinel):
     """Two-arguments form of iter()."""
     while True:
@@ -432,11 +434,9 @@ def format(value, format_spec=""):
 @_argument
 def getattr(object, attribute, *fallback):
     """getattr(object, name[, default]) -> value
-
     Get a named attribute from an object; getattr(x, 'y') is equivalent to x.y.
     When a default argument is given, it is returned when the attribute doesn't
     exist; without it, an exception is raised in that case.
-
     Changes over built-in function:
     + Support for the 'fallback' keyword argument as well as positional
     """
