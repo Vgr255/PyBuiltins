@@ -83,10 +83,38 @@ def _argument(func):
             return func(*arg + (keyword[arg_name],))
         return func(*arg)
 
-    code = func.__code__
-    arg_count = code.co_argcount
-    func_name = code.co_name
-    arg_name = code.co_varnames[arg_count]
+    co = func.__code__
+    arg_count = co.co_argcount
+    func_name = co.co_name
+    arg_name = co.co_varnames[arg_count]
+
+    inner.__name__ = func.__name__
+    inner.__doc__ = func.__doc__
+
+    if _sys.version_info >= (3, 3):
+        inner.__qualname__ = func.__qualname__
+
+    return inner
+
+def _eval_exec_handler(func):
+    """Handle eval() and exec() properly."""
+    def inner(source, *dicts, **keywords):
+        for name in keywords:
+            if name not in ("globals", "locals"):
+                raise TypeError("%s() got an unexpected keyword argument: %r" % (func_name, name))
+        if len(dicts) > 2:
+            raise TypeError("%s expected at most 3 arguments, got %i" % (func_name, len(dicts) + 1))
+        if "globals" in keywords and dicts:
+            raise TypeError("%s() got multiple values for argument 'globals'" % func_name)
+        if "locals" in keywords and len(dicts) > 1:
+            raise TypeError("%s() got multiple values for argument 'locals'" % func_name)
+
+        globals = keywords.get("globals", dicts[0] if dicts else _sys._getframe(1).f_globals)
+        locals = keywords.get("locals", dicts[1] if len(dicts) > 1 else globals)
+
+        return func(source, globals, locals)
+
+    func_name = func.__code__.co_name
 
     inner.__name__ = func.__name__
     inner.__doc__ = func.__doc__
@@ -112,9 +140,9 @@ def _max_min_caller(func):
 
         return func(iterable, key)
 
-    code = func.__code__
-    arg_count = code.co_argcount
-    func_name = code.co_name
+    co = func.__code__
+    arg_count = co.co_argcount
+    func_name = co.co_name
 
     inner.__name__ = func.__name__
     inner.__doc__ = func.__doc__
