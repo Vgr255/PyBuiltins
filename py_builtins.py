@@ -2206,6 +2206,8 @@ class super:
 
         if not args:
             frame = _sys._getframe(1)
+            if frame.f_back is None or frame.f_back.f_code.co_name == "<module>":
+                raise RuntimeError("super(): no arguments")
             obj = frame.f_locals[frame.f_code.co_varnames[0]]
             args = (type(obj), obj)
 
