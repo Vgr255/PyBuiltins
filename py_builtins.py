@@ -508,6 +508,29 @@ def id(obj):
 
     return int(object.__repr__(obj)[object.__repr__(obj).index("0x"):-1], 16)
 
+def input(prompt=""):
+    """input([prompt]) -> string
+
+    Read a string from standard input.  The trailing newline is stripped.
+    If the user hits EOF (Unix: Ctl-D, Windows: Ctl-Z+Return), raise EOFError.
+    On Unix, GNU readline is used if enabled.  The prompt string, if given,
+    is printed without a trailing newline before reading.
+
+    Changes over built-in function:
+    - Readline is not used
+    """
+
+    _sys.stdout.write(prompt.rstrip("\r\n"))
+    _sys.stdout.flush()
+
+    result = _sys.stdin.readline()
+
+    if _os.sep == "\\":
+        if result.rstrip()[-1] == "\x1a":
+            raise EOFError
+
+    return result.rstrip("\r\n")
+    
 def isinstance(object, types):
     """isinstance(object, class-or-type-or-tuple) -> bool
 
@@ -759,11 +782,17 @@ def print(*output, sep=" ", end="\n", file=_sys.stdout, flush=False):
     if flush:
         file.flush()
 
+def repr(object):
+    """repr(object) -> string
 
+    Return the canonical string representation of the object.
+    For most object types, eval(repr(object)) == object.
 
+    Changes over built-in function:
     None
     """
 
+    return type(object).__repr__(object)
 
 
 
